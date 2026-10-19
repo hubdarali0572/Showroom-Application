@@ -1,0 +1,491 @@
+<script setup>
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { Link, router, usePage } from "@inertiajs/vue3";
+import { useDarkMode } from "@/composables/useDarkMode";
+import { usePermissions } from "@/composables/usePermissions";
+import { useI18n } from "@/composables/useI18n";
+import LanguageSwitcher from "@/Components/LanguageSwitcher.vue";
+import ConfirmModal from "@/Components/ConfirmModal.vue";
+
+const { isDark, toggleDarkMode } = useDarkMode();
+const { can, roleName, isSuperAdmin } = usePermissions();
+const { t } = useI18n();
+const page = usePage();
+
+const isSidebarOpen = ref(false);
+const isProfileMenuOpen = ref(false);
+const profileMenuRef = ref(null);
+const isLogoutModalOpen = ref(false);
+const isLoggingOut = ref(false);
+
+const openLogoutModal = () => {
+    isProfileMenuOpen.value = false;
+    isLogoutModalOpen.value = true;
+};
+
+const closeLogoutModal = () => {
+    if (isLoggingOut.value) {
+        return;
+    }
+    isLogoutModalOpen.value = false;
+};
+
+const confirmLogout = () => {
+    isLoggingOut.value = true;
+    router.post(
+        route("logout"),
+        {},
+        {
+            onFinish: () => {
+                isLoggingOut.value = false;
+                isLogoutModalOpen.value = false;
+            },
+        },
+    );
+};
+
+const closeProfileMenuOnOutsideClick = (event) => {
+    if (!isProfileMenuOpen.value) {
+        return;
+    }
+
+    if (profileMenuRef.value?.contains(event.target)) {
+        return;
+    }
+
+    isProfileMenuOpen.value = false;
+};
+
+onMounted(() => {
+    document.addEventListener("mousedown", closeProfileMenuOnOutsideClick);
+});
+
+onUnmounted(() => {
+    document.removeEventListener("mousedown", closeProfileMenuOnOutsideClick);
+});
+
+watch(
+    () => page.url,
+    () => {
+        isSidebarOpen.value = false;
+        isProfileMenuOpen.value = false;
+    },
+);
+
+const userInitials = () => {
+    const name = page.props.auth.user.name;
+    return name
+        .split(" ")
+        .map((part) => part[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase();
+};
+
+const isProfileActive = () => route().current("profile.edit");
+
+const allNavItems = computed(() => [
+    {
+        name: t("nav.dashboard"),
+        icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
+        route: "dashboard",
+        active: route().current("dashboard"),
+        show: true,
+    },
+    { category: t("nav.main_modules") },
+    {
+        name: t("nav.users"),
+        icon: "M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z",
+        route: "users.index",
+        active: route().current("users.*"),
+        show: can("view user"),
+    },
+    {
+        name: t("nav.roles"),
+        icon: "M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z",
+        route: "roles.index",
+        active: route().current("roles.*"),
+        show: can("view role"),
+    },
+    {
+        name: t("nav.activity"),
+        icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01",
+        route: "activity.index",
+        active: route().current("activity.*"),
+        show: isSuperAdmin.value,
+    },
+]);
+
+const navItems = computed(() => {
+    const visible = allNavItems.value.filter(
+        (item) => item.category || item.show,
+    );
+
+    return visible.filter((item, index, items) => {
+        if (!item.category) {
+            return true;
+        }
+
+        const next = items[index + 1];
+        return next && !next.category;
+    });
+});
+
+const pageTitle = computed(() => {
+    const activeModule = allNavItems.value.find(
+        (item) => !item.category && item.show && item.active,
+    );
+
+    if (activeModule) {
+        return activeModule.name;
+    }
+
+    if (route().current("profile.*")) {
+        return t("nav.profile");
+    }
+
+    return t("nav.dashboard");
+});
+</script>
+
+<template>
+    <div
+        class="theme-app-bg flex h-screen overflow-hidden font-sans transition-colors"
+    >
+        <!-- MOBILE OVERLAY -->
+        <transition
+            enter-active-class="transition-opacity ease-linear duration-300"
+            enter-from-class="opacity-0"
+            enter-to-class="opacity-100"
+            leave-active-class="transition-opacity ease-linear duration-300"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0"
+        >
+            <div
+                v-if="isSidebarOpen"
+                class="fixed inset-0 z-40 bg-black/60 lg:hidden"
+                @click="isSidebarOpen = false"
+            ></div>
+        </transition>
+
+        <!-- SIDEBAR -->
+        <aside
+            class="theme-sidebar fixed inset-y-0 start-0 z-50 flex w-72 flex-col transition-transform duration-300 ease-in-out lg:static lg:inset-auto lg:w-64 lg:translate-x-0"
+            :class="
+                isSidebarOpen
+                    ? 'max-lg:translate-x-0'
+                    : 'max-lg:-translate-x-full max-lg:rtl:translate-x-full'
+            "
+        >
+            <div class="theme-sidebar-brand">
+                <div class="flex items-center gap-3">
+                    <div class="theme-sidebar-logo">
+                        <svg
+                            class="h-4 w-4"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                        >
+                            <path
+                                d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+                            ></path>
+                        </svg>
+                    </div>
+                    <span class="theme-sidebar-brand-name">{{
+                        t("app.name")
+                    }}</span>
+                </div>
+                <button
+                    type="button"
+                    class="theme-sidebar-close lg:hidden"
+                    @click="isSidebarOpen = false"
+                >
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        stroke-width="2"
+                    >
+                        <path d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <nav class="custom-scrollbar flex-1 overflow-y-auto py-3">
+                <template v-for="item in navItems" :key="item.name || item.category">
+                    <div
+                        v-if="item.category"
+                        class="theme-sidebar-category px-5 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-[0.15em]"
+                    >
+                        {{ item.category }}
+                    </div>
+
+                    <div v-else class="px-2.5">
+                        <Link
+                            :href="route(item.route)"
+                            class="theme-sidebar-nav-item"
+                            :class="
+                                item.active
+                                    ? 'theme-sidebar-nav-active'
+                                    : 'theme-sidebar-nav-inactive'
+                            "
+                        >
+                            <svg
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                stroke-width="2"
+                            >
+                                <path
+                                    :d="item.icon"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                />
+                            </svg>
+                            <span>{{ item.name }}</span>
+                        </Link>
+                    </div>
+                </template>
+            </nav>
+
+            <div ref="profileMenuRef" class="theme-sidebar-footer relative shrink-0">
+                <transition
+                    enter-active-class="transition ease-out duration-200"
+                    enter-from-class="opacity-0 translate-y-2 scale-95"
+                    enter-to-class="opacity-100 translate-y-0 scale-100"
+                    leave-active-class="transition ease-in duration-75"
+                    leave-from-class="opacity-100 translate-y-0 scale-100"
+                    leave-to-class="opacity-0 translate-y-2 scale-95"
+                >
+                    <div
+                        v-if="isProfileMenuOpen"
+                        class="theme-dropdown-panel absolute bottom-full left-2 right-2 z-[60] mb-1"
+                    >
+                        <div class="theme-dropdown-header">
+                            <p
+                                class="theme-text-muted text-[9px] font-bold uppercase tracking-wider"
+                            >
+                                {{ t("header.signed_in_as") }}
+                            </p>
+                            <p
+                                class="theme-heading truncate text-[11px] font-semibold leading-tight"
+                            >
+                                {{ $page.props.auth.user.name }}
+                            </p>
+                            <p
+                                class="theme-text-muted truncate text-[10px] leading-tight"
+                            >
+                                {{ $page.props.auth.user.email }}
+                            </p>
+                        </div>
+
+                        <div class="p-1">
+                            <Link
+                                :href="route('profile.edit')"
+                                class="theme-dropdown-item"
+                                :class="{ 'is-active': isProfileActive() }"
+                            >
+                                <span class="theme-dropdown-icon">
+                                    <svg
+                                        class="h-3.5 w-3.5"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                        stroke-width="2"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+                                        />
+                                    </svg>
+                                </span>
+                                {{ t("header.my_profile") }}
+                            </Link>
+
+                            <button
+                                type="button"
+                                class="theme-dropdown-item mt-0.5"
+                                :title="
+                                    isDark
+                                        ? t('header.light_mode')
+                                        : t('header.dark_mode')
+                                "
+                                :aria-label="
+                                    isDark
+                                        ? t('header.light_mode')
+                                        : t('header.dark_mode')
+                                "
+                                @click="toggleDarkMode"
+                            >
+                                <span class="theme-dropdown-icon">
+                                    <svg
+                                        v-if="isDark"
+                                        class="h-3.5 w-3.5"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                        stroke-width="2"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"
+                                        />
+                                    </svg>
+                                    <svg
+                                        v-else
+                                        class="h-3.5 w-3.5"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                        stroke-width="2"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"
+                                        />
+                                    </svg>
+                                </span>
+                                {{
+                                    isDark
+                                        ? t("header.light_mode")
+                                        : t("header.dark_mode")
+                                }}
+                            </button>
+
+                            <LanguageSwitcher variant="dropdown" />
+
+                            <button
+                                type="button"
+                                class="theme-dropdown-item mt-0.5"
+                                @click="openLogoutModal"
+                            >
+                                <span class="theme-dropdown-icon">
+                                    <svg
+                                        class="h-3.5 w-3.5"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                        stroke-width="2"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"
+                                        />
+                                    </svg>
+                                </span>
+                                {{ t("header.log_out") }}
+                            </button>
+                        </div>
+                    </div>
+                </transition>
+
+                <button
+                    type="button"
+                    class="theme-sidebar-profile-btn"
+                    :class="{ 'is-open': isProfileMenuOpen }"
+                    @click="isProfileMenuOpen = !isProfileMenuOpen"
+                >
+                    <div class="theme-sidebar-avatar">
+                        {{ userInitials() }}
+                    </div>
+                    <div class="min-w-0 flex-1 overflow-hidden text-left">
+                        <p class="truncate text-[10px] font-semibold leading-none">
+                            {{ $page.props.auth.user.name }}
+                        </p>
+                        <p
+                            class="mt-px truncate text-[9px] capitalize leading-none opacity-70"
+                        >
+                            {{ roleName }}
+                        </p>
+                    </div>
+                    <svg
+                        class="h-3 w-3 shrink-0 opacity-60 transition-transform duration-200"
+                        :class="{ 'rotate-180': isProfileMenuOpen }"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        stroke-width="2"
+                    >
+                        <path d="M5 15l7-7 7 7" />
+                    </svg>
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
+            <header class="theme-header">
+                <div class="flex min-w-0 flex-1 items-center">
+                    <button
+                        type="button"
+                        class="theme-header-menu-btn -ms-2 lg:hidden"
+                        @click="isSidebarOpen = true"
+                    >
+                        <svg
+                            class="h-7 w-7"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            stroke-width="2.5"
+                        >
+                            <path d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    <div class="min-w-0">
+                        <h1 class="theme-header-title">
+                            {{ pageTitle }}
+                        </h1>
+                    </div>
+                </div>
+            </header>
+
+            <main
+                class="theme-content-bg custom-scrollbar min-h-0 flex-1 overflow-x-hidden overflow-y-auto transition-colors"
+            >
+                <div class="theme-page-shell">
+                    <slot />
+                </div>
+            </main>
+
+            <footer class="theme-page-footer">
+                <div>{{ t("app.footer") }}</div>
+            </footer>
+        </div>
+
+        <ConfirmModal
+            :show="isLogoutModalOpen"
+            :title="t('header.logout_modal_title')"
+            :message="t('header.logout_modal_message')"
+            :confirm-label="t('header.logout_confirm')"
+            :cancel-label="t('header.logout_cancel')"
+            :badge="$page.props.auth?.user?.name"
+            :badge-initial="userInitials()"
+            :warning="t('header.logout_warning')"
+            icon="logout"
+            :loading="isLoggingOut"
+            @close="closeLogoutModal"
+            @confirm="confirmLogout"
+        />
+    </div>
+</template>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+}
+aside .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.3);
+}
+</style>
