@@ -150,3 +150,90 @@ const legalCopy = {
         </PublicModal>
     </footer>
 </template>
+
+<style>
+/* ============================================================
+   Home page colour theme (navy + amber gold)
+   navy   #06101e / #0a1a30
+   gold   #fbbf24 (amber-400) / #f59e0b (amber-500) / #fcd34d (amber-300)
+   text   #e2e8f0 (slate-200) / #cbd5e1 (slate-300) / #94a3b8 (slate-400)
+   Colours only. Layout and spacing are not changed.
+   ============================================================ */
+
+/* ---------- Footer background ---------- */
+.ps-footer {
+    background: linear-gradient(to bottom, #0a1a30, #06101e);
+    border-top: 1px solid rgba(251, 191, 36, 0.25);
+    color: #cbd5e1;
+}
+
+/* ---------- Paragraph text ---------- */
+.ps-footer p {
+    color: #cbd5e1;
+}
+
+/* ---------- Headings (gold, like home section titles) ---------- */
+.ps-footer h3 {
+    color: #fcd34d;
+}
+
+/* ---------- Lists and links ---------- */
+.ps-footer .ps-footer-list li {
+    color: #cbd5e1;
+}
+.ps-footer .ps-footer-list a {
+    color: #cbd5e1;
+    transition: color 0.25s ease;
+}
+.ps-footer .ps-footer-list a:hover,
+.ps-footer .ps-footer-list a:focus-visible {
+    color: #fbbf24;
+}
+
+/* ---------- Social icons ---------- */
+.ps-footer .ps-social a {
+    color: #e2e8f0;
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: transform 0.3s ease, background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+.ps-footer .ps-social a:hover,
+.ps-footer .ps-social a:focus-visible {
+    color: #020617;
+    background-color: #fbbf24;
+    border-color: #fbbf24;
+    transform: translateY(-3px);
+}
+
+/* ---------- Bottom bar ---------- */
+.ps-footer .ps-footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    color: #94a3b8;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 1.25rem;
+    padding-bottom: 1.5rem;
+}
+.ps-footer .ps-footer-bottom p {
+    color: #94a3b8;
+    margin: 0;
+}
+.ps-footer .ps-footer-bottom .ps-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.25rem;
+}
+.ps-footer .ps-footer-bottom .ps-util-link {
+    color: #94a3b8 !important;
+    background: transparent;
+    transition: color 0.25s ease;
+}
+.ps-footer .ps-footer-bottom .ps-util-link:hover,
+.ps-footer .ps-footer-bottom .ps-util-link:focus-visible {
+    color: #fbbf24 !important;
+}
+</style>

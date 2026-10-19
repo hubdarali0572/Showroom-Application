@@ -15,7 +15,9 @@ const studentPortalUrl = computed(
 const lmsUrl = computed(() => cms.value.lms_url || "/login");
 
 const isMobileMenuOpen = ref(false);
-const isDesktop = ref(false);
+const isDesktop = ref(
+    typeof window !== "undefined" ? window.innerWidth >= 1024 : false,
+);
 
 const navItems = [
     { label: "Home", href: route("publicSite.home"), routeName: "publicSite.home" },
@@ -205,3 +207,123 @@ onUnmounted(() => {
         @click="closeMobileMenu"
     />
 </template>
+
+<style>
+/* ============================================================
+   Home page colour theme (navy + amber gold)
+   navy   #06101e / #0a1a30
+   gold   #fbbf24 (amber-400) / #f59e0b (amber-500) / #fcd34d (amber-300)
+   text   #e2e8f0 (slate-200) / #cbd5e1 (slate-300)
+   Colours only. Layout and spacing are not changed.
+   ============================================================ */
+
+/* ---------- Header bar ---------- */
+.ps-chrome .ps-header {
+    background: rgba(6, 16, 30, 0.92);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(251, 191, 36, 0.18);
+    box-shadow: 0 8px 30px rgba(6, 16, 30, 0.35);
+    color: #e2e8f0;
+}
+
+/* ---------- Brand ---------- */
+.ps-chrome .ps-brand,
+.ps-chrome .ps-brand-mark {
+    color: #ffffff;
+}
+
+/* ---------- Desktop nav links ---------- */
+.ps-chrome .ps-nav a {
+    color: #cbd5e1;
+    transition: color 0.25s ease, background-color 0.25s ease, border-color 0.25s ease;
+}
+.ps-chrome .ps-nav a:hover,
+.ps-chrome .ps-nav a:focus-visible {
+    color: #fcd34d;
+    background-color: rgba(251, 191, 36, 0.1);
+}
+/* active link (works with common active patterns) */
+.ps-chrome .ps-nav a[aria-current="page"],
+.ps-chrome .ps-nav a.active,
+.ps-chrome .ps-nav a.is-active,
+.ps-chrome .ps-nav a.ps-nav-link-active {
+    color: #fbbf24;
+    background-color: rgba(251, 191, 36, 0.12);
+    border-color: #fbbf24;
+}
+
+/* ---------- Student Portal / LMS ---------- */
+.ps-chrome .ps-util-link {
+    color: #cbd5e1;
+    transition: color 0.25s ease;
+}
+.ps-chrome .ps-util-link:hover,
+.ps-chrome .ps-util-link:focus-visible {
+    color: #fcd34d;
+}
+
+/* ---------- Apply Now button (same as home gold button) ---------- */
+.ps-chrome .ps-btn-primary {
+    background-image: linear-gradient(to right, #fbbf24, #f59e0b);
+    background-color: #f59e0b;
+    color: #020617;
+    border: 0;
+    font-weight: 700;
+    box-shadow: 0 10px 24px rgba(245, 158, 11, 0.25);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.ps-chrome .ps-btn-primary:hover,
+.ps-chrome .ps-btn-primary:focus-visible {
+    color: #020617;
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(245, 158, 11, 0.4);
+}
+
+/* ---------- Mobile menu button ---------- */
+.ps-chrome .ps-menu-btn {
+    color: #fcd34d;
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: background-color 0.25s ease, color 0.25s ease;
+}
+.ps-chrome .ps-menu-btn:hover,
+.ps-chrome .ps-menu-btn:focus-visible {
+    background-color: #fbbf24;
+    color: #020617;
+}
+
+/* ---------- Mobile panel ---------- */
+.ps-chrome .ps-mobile-panel {
+    background: #0a1a30;
+    border-top: 1px solid rgba(251, 191, 36, 0.2);
+    box-shadow: 0 20px 40px rgba(6, 16, 30, 0.5);
+    max-height: calc(100svh - 5.25rem);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+}
+.ps-chrome .ps-mobile-panel a {
+    color: #e2e8f0;
+    border-color: rgba(255, 255, 255, 0.08);
+    transition: color 0.25s ease, background-color 0.25s ease;
+}
+.ps-chrome .ps-mobile-panel a:hover,
+.ps-chrome .ps-mobile-panel a:focus-visible {
+    color: #fcd34d;
+    background-color: rgba(251, 191, 36, 0.1);
+}
+.ps-chrome .ps-mobile-panel a[aria-current="page"],
+.ps-chrome .ps-mobile-panel a.active,
+.ps-chrome .ps-mobile-panel a.is-active {
+    color: #fbbf24;
+    background-color: rgba(251, 191, 36, 0.12);
+}
+
+/* ---------- Overlay behind mobile menu ---------- */
+.ps-overlay {
+    background: rgba(6, 16, 30, 0.7);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+}
+</style>
